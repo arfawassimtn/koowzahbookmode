@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book Mode – Reading Experience</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ─── Reset & Variables ──────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:    #f5f0e8;
+    --parchment:#ede8d8;
+    --sepia:    #c8a97a;
+    --ink:      #1a1612;
+    --ink-soft: #3d3228;
+    --ink-mute: #7a6a58;
+    --gold:     #b8935a;
+    --accent:   #3a6ea8;
+    --green:    #2e7d5c;
+    --sidebar:  #1c1917;
+    --sidebar-active: #2a2520;
+    --sidebar-icon: #8a7a6a;
+    --sidebar-icon-active: #f5f0e8;
+    --panel:    #f9f6f0;
+    --border:   #d8cfbe;
+    --shadow:   rgba(26,22,18,.12);
+    --reading-bg: #faf7f2;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body:    'Crimson Pro', Georgia, serif;
+    --font-ui:      'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-ui);
+    background: #f0ece4;
+    color: var(--ink);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+  }
+
+  /* ─── Left Sidebar ───────────────────────────────────── */
+  .sidebar {
+    grid-row: 1 / -1;
+    background: var(--sidebar);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 4px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .sidebar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 60px;
+    transition: background .2s;
+    color: var(--sidebar-icon);
+    text-decoration: none;
+  }
+  .sidebar-item:hover { background: var(--sidebar-active); color: var(--cream); }
+  .sidebar-item.active { background: var(--sidebar-active); color: var(--sidebar-icon-active); }
+  .sidebar-item svg { width: 22px; height: 22px; }
+  .sidebar-item span { font-size: 9.5px; font-family: var(--font-ui); letter-spacing: .3px; }
+
+  /* ─── Main Layout ────────────────────────────────────── */
+  .main-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── Top Bar ────────────────────────────────────────── */
+  .topbar {
+    background: var(--reading-bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    height: 48px;
+    gap: 16px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-mute);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-back { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--accent); font-size: 13px; }
+  .topbar-back svg { width: 16px; height: 16px; }
+  .topbar-title {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+  .topbar-title svg { width: 14px; height: 14px; }
+  .topbar-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+  .topbar-actions svg { width: 20px; height: 20px; cursor: pointer; color: var(--ink-mute); transition: color .2s; }
+  .topbar-actions svg:hover { color: var(--ink); }
+  .topbar-aa { font-family: var(--font-ui); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--ink-mute); }
+
+  /* ─── Content Area ───────────────────────────────────── */
+  .content-area {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 0;
+    min-height: calc(100vh - 48px);
+  }
+
+  /* ─── Book Viewer ────────────────────────────────────── */
+  .book-viewer {
+    background: var(--reading-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 20px 20px;
+    gap: 20px;
+    position: relative;
+  }
+
+  /* Two-page spread */
+  .book-spread {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    max-width: 680px;
+    width: 100%;
+    filter: drop-shadow(0 8px 32px rgba(26,22,18,.18));
+    position: relative;
+  }
+
+  .book-page {
+    background: var(--cream);
+    flex: 1;
+    padding: 36px 32px 40px;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    position: relative;
+    transition: background .4s;
+  }
+
+  .book-page.left-page {
+    border-radius: 4px 0 0 4px;
+    border-right: 1px solid rgba(184,147,90,.2);
+    background: linear-gradient(to right, #ede8d8 0%, #f0ead8 100%);
+  }
+  .book-page.right-page {
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(to left, #ede8d8 0%, #f2edd8 100%);
+  }
+
+  /* Spine shadow effect */
+  .book-spread::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to right, rgba(100,70,30,.15), rgba(100,70,30,.05));
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .chapter-label {
+    font-family: var(--font-ui);
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .chapter-ornament {
+    text-align: center;
+    color: var(--gold);
+    font-size: 16px;
+    margin-bottom: 12px;
+    opacity: .7;
+  }
+
+  .page-heading {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+
+  .page-body {
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+    flex: 1;
+  }
+  .page-body p { margin-bottom: 12px; }
+
+  .page-checklist { list-style: none; margin-top: 4px; }
+  .page-checklist li {
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .check-icon {
+    width: 17px; height: 17px;
+    background: var(--green);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 3px;
+  }
+  .check-icon svg { width: 10px; height: 10px; color: white; }
+
+  .page-number {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-align: center;
+    margin-top: 20px;
+    letter-spacing: .5px;
+  }
+
+  /* Nav arrows */
+  .page-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px; height: 36px;
+    background: white;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px var(--shadow);
+    z-index: 5;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .page-nav-btn:hover { box-shadow: 0 4px 16px var(--shadow); transform: translateY(-50%) scale(1.08); }
+  .page-nav-btn.prev { left: -18px; }
+  .page-nav-btn.next { right: -18px; }
+  .page-nav-btn svg { width: 16px; height: 16px; color: var(--ink-soft); }
+
+  /* Progress bar */
+  .bottom-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 680px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    width: 11%;
+    transition: width .4s;
+  }
+
+  /* ─── Right Panel ────────────────────────────────────── */
+  .right-panel {
+    border-left: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-section:last-child { border-bottom: none; }
+
+  .panel-title {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 12px;
+  }
+
+  /* Reading mode buttons */
+  .reading-modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .mode-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 6px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all .2s;
+    grid-column: auto;
+  }
+  .mode-btn.wide { grid-column: span 2; }
+  .mode-btn.active {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+  }
+  .mode-btn:hover:not(.active) { border-color: var(--gold); color: var(--ink); }
+  .mode-btn svg { width: 14px; height: 14px; }
+
+  /* Progress section */
+  .progress-label { font-family: var(--font-ui); font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
+  .progress-bar-panel { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--gold); width: 11%; border-radius: 3px; }
+
+  /* Quick Actions */
+  .action-btn {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: all .2s;
+  }
+  .action-btn:hover { border-color: var(--gold); color: var(--ink); }
+  .action-btn:last-child { margin-bottom: 0; }
+  .action-btn svg { width: 14px; height: 14px; color: var(--ink-mute); }
+
+  /* ─── Bottom Sample Spreads ──────────────────────────── */
+  .sample-section {
+    padding: 32px 24px 24px;
+    background: #ece7dc;
+    border-top: 1px solid var(--border);
+    grid-column: 1 / -1;
+  }
+
+  .sample-heading {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .sample-sub {
+    font-family: var(--font-ui);
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-bottom: 20px;
+  }
+
+  .sample-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 860px;
+  }
+
+  .sample-card {
+    background: var(--cream);
+    border-radius: 6px;
+    padding: 28px 22px 20px;
+    box-shadow: 0 4px 20px rgba(26,22,18,.1), 2px 2px 0 rgba(200,169,122,.25);
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+    position: relative;
+    transition: transform .25s, box-shadow .25s;
+    cursor: pointer;
+  }
+  .sample-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(26,22,18,.15), 2px 2px 0 rgba(200,169,122,.25); }
+
+  .sample-card-chapter {
+    font-family: var(--font-ui);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .sample-card-ornament { text-align: center; color: var(--gold); font-size: 14px; opacity: .6; margin-bottom: 8px; }
+  .sample-card-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .sample-card-body {
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    flex: 1;
+  }
+  .sample-card-body ul { padding-left: 16px; }
+  .sample-card-body li { margin-bottom: 4px; }
+  .numbered-list { list-style: none; padding: 0; }
+  .numbered-list li { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-family: var(--font-body); font-size: 13px; color: var(--ink-soft); }
+  .num-badge {
+    width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-family: var(--font-ui); font-weight: 500;
+    flex-shrink: 0; color: var(--ink-soft);
+  }
+  .sample-card-page {
+    font-family: var(--font-ui); font-size: 10px; color: var(--ink-mute);
+    text-align: center; margin-top: 16px; border-top: 1px solid var(--border); padding-top: 10px;
+  }
+
+  /* ─── Bottom Nav ─────────────────────────────────────── */
+  .bottom-nav {
+    background: var(--sidebar);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    height: 50px;
+    gap: 0;
+    grid-column: 1 / -1;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+  .bottom-nav-title { color: var(--cream); font-family: var(--font-ui); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; margin-right: 24px; }
+  .bottom-nav-title svg { width: 18px; height: 18px; color: var(--sidebar-icon); }
+  .page-dots { display: flex; gap: 4px; align-items: center; }
+  .page-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-size: 12px; cursor: pointer;
+    color: var(--sidebar-icon); transition: all .2s;
+  }
+  .page-dot:hover { color: var(--cream); }
+  .page-dot.active { background: var(--gold); color: white; font-weight: 600; }
+  .page-dot.ellipsis { cursor: default; color: var(--sidebar-icon); }
+  .bottom-nav-actions { display: flex; gap: 8px; margin-left: auto; }
+  .nav-btn {
+    padding: 7px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,.12);
+    background: transparent; color: var(--sidebar-icon); font-family: var(--font-ui); font-size: 12.5px;
+    cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .2s;
+  }
+  .nav-btn:hover { color: var(--cream); border-color: rgba(255,255,255,.25); }
+  .nav-btn svg { width: 14px; height: 14px; }
+
+  /* Sepia mode */
+  body.sepia-mode {
+    --cream: #f2e8d4;
+    --parchment: #e8d8b8;
+    --reading-bg: #f0e6d0;
+    --panel: #f4ead8;
+  }
+  body.dark-mode {
+    --cream: #2a2420;
+    --parchment: #221e1a;
+    --reading-bg: #1a1612;
+    --panel: #201c18;
+    --ink: #e8ddd0;
+    --ink-soft: #c8b89a;
+    --ink-mute: #7a6a58;
+    --border: #3a3028;
+    --panel: #242018;
+    background: #0e0c0a;
+  }
+
+  /* ─── Scrollbar ──────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ─────────────────────────────────────────── -->
+<aside class="sidebar">
+  <a class="sidebar-item active" title="Book Mode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Book Mode</span>
+  </a>
+  <a class="sidebar-item" title="Contents">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <span>Contents</span>
+  </a>
+  <a class="sidebar-item" title="Bookmarks">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    <span>Bookmarks</span>
+  </a>
+  <a class="sidebar-item" title="Notes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <span>Notes</span>
+  </a>
+  <a class="sidebar-item" title="Highlights">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span>Highlights</span>
+  </a>
+  <a class="sidebar-item" style="margin-top:auto" title="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </a>
+  <a class="sidebar-item" title="Export">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span>Export</span>
+  </a>
+</aside>
+
+<!-- ── Main ────────────────────────────────────────────── -->
+<div class="main-wrapper">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-back" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Library
+    </div>
+    <div class="topbar-title">
+      Your Book
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="topbar-actions">
+      <span class="topbar-aa">Aa</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" onclick="toggleTheme()" title="Theme" style="cursor:pointer"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    </div>
+  </header>
+
+  <!-- Content grid -->
+  <div style="display:grid; grid-template-rows:1fr auto; flex:1;">
+    <div class="content-area">
+
+      <!-- Book viewer -->
+      <div class="book-viewer">
+        <div class="book-spread" id="bookSpread">
+          <!-- Left page -->
+          <div class="book-page left-page">
+            <div class="chapter-label">Chapter 1</div>
+            <div class="chapter-ornament">❧</div>
+            <div class="page-heading">Feature Suggestion:<br>Book Mode</div>
+            <div class="page-body">
+              <p>You suggested an amazing idea: make the UX/UI as if you are reading a book with page numbers.</p>
+              <p>This transforms the ChatGPT experience into something more immersive, focused, and powerful.</p>
+            </div>
+            <div class="page-number">Page 1 of 18</div>
+          </div>
+
+          <!-- Prev arrow -->
+          <button class="page-nav-btn prev" onclick="prevPage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+
+          <!-- Right page -->
+          <div class="book-page right-page">
+            <div class="chapter-label">Chapter 2</div>
+            <div class="chapter-ornament">❧</div>
+            <div class="page-heading">The Core Experience</div>
+            <div class="page-body">
+              <p>Turn any conversation into a real book-style reading experience.</p>
+              <ul class="page-checklist" id="checklist">
+                <li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span> Clean page layout (like a book)</li>
+                <li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span> Page numbers (Page 1, 2, 3…)</li>
+                <li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span> Smooth page flipping animation</li>
+                <li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span> Minimal distractions</li>
+                <li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span> Better focus, deeper learning</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 2 of 18</div>
+          </div>
+
+          <!-- Next arrow -->
+          <button class="page-nav-btn next" onclick="nextPage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="bottom-bar">
+          <span>First</span>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <span id="pageLabel">Page 2 of 18 &nbsp;•&nbsp; 11%</span>
+          <span>Last</span>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <aside class="right-panel">
+        <!-- Reading Modes -->
+        <div class="panel-section">
+          <div class="panel-title">Reading Modes</div>
+          <div class="reading-modes">
+            <button class="mode-btn active" id="modeLight" onclick="setMode('light')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+              Light
+            </button>
+            <button class="mode-btn" id="modeSepia" onclick="setMode('sepia')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              Sepia
+            </button>
+            <button class="mode-btn wide" id="modeDark" onclick="setMode('dark')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              Dark
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="panel-section">
+          <div class="panel-title">Progress</div>
+          <div class="progress-label">You are 11% through<br>this book.</div>
+          <div class="progress-bar-panel"><div class="progress-bar-fill" id="progressPanel"></div></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="panel-section">
+          <div class="panel-title">Quick Actions</div>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Add Note
+          </button>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Highlight
+          </button>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            Bookmark Page
+          </button>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Book
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Sample cards section -->
+    <section class="sample-section" style="grid-column:1/-1;">
+      <div style="padding-left:16px;">
+        <div class="sample-heading">2. This Conversation as a Real Book-Style Sample</div>
+        <div class="sample-sub">Here's this entire conversation formatted like a real book.</div>
+      </div>
+      <div style="padding-left:16px;">
+        <div class="sample-cards">
+          <!-- Card 1 -->
+          <div class="sample-card">
+            <div class="sample-card-chapter">Chapter 1</div>
+            <div class="sample-card-ornament">❧</div>
+            <div class="sample-card-title">The Idea</div>
+            <div class="sample-card-body">
+              <p>You said:<br>"Feature suggestion: make the UX/UI as if you are reading a book plus number of page"</p>
+              <p style="margin-top:10px;">That simple suggestion is actually powerful. It can completely change the way people read, learn, and interact with AI.</p>
+            </div>
+            <div class="sample-card-page">Page 1 of 18</div>
+          </div>
+          <!-- Card 2 -->
+          <div class="sample-card">
+            <div class="sample-card-chapter">Chapter 2</div>
+            <div class="sample-card-ornament">❧</div>
+            <div class="sample-card-title">My Response</div>
+            <div class="sample-card-body">
+              <p>I took your idea and turned it into something bigger.</p>
+              <p style="margin-top:8px;">I delivered:</p>
+              <ol class="numbered-list" style="margin-top:6px;">
+                <li><span class="num-badge">1</span> A complete Book Mode concept</li>
+                <li><span class="num-badge">2</span> UI/UX mockup idea</li>
+                <li><span class="num-badge">3</span> Product concept (like a startup)</li>
+                <li><span class="num-badge">4</span> This conversation as a real book-style sample</li>
+              </ol>
+            </div>
+            <div class="sample-card-page">Page 2 of 18</div>
+          </div>
+          <!-- Card 3 -->
+          <div class="sample-card">
+            <div class="sample-card-chapter">Chapter 3</div>
+            <div class="sample-card-ornament">❧</div>
+            <div class="sample-card-title">Why Book Mode Matters</div>
+            <div class="sample-card-body">
+              <p>Book Mode is not just a design change. It is a learning revolution.</p>
+              <ul style="margin-top:10px; padding-left:14px;">
+                <li>Reduces distractions</li>
+                <li>Improves focus</li>
+                <li>Creates a deep reading experience</li>
+                <li>Makes knowledge easy to revisit</li>
+                <li>Turns AI into a personal library</li>
+              </ul>
+            </div>
+            <div class="sample-card-page">Page 3 of 18</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Bottom nav -->
+  <footer class="bottom-nav">
+    <div class="bottom-nav-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Your Book
+    </div>
+    <div class="page-dots">
+      <div class="page-dot active">1</div>
+      <div class="page-dot">2</div>
+      <div class="page-dot">3</div>
+      <div class="page-dot">4</div>
+      <div class="page-dot">5</div>
+      <div class="page-dot ellipsis">…</div>
+      <div class="page-dot">18</div>
+    </div>
+    <div class="bottom-nav-actions">
+      <button class="nav-btn" onclick="prevPage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Previous
+      </button>
+      <button class="nav-btn" onclick="nextPage()">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </footer>
+
+</div><!-- end main-wrapper -->
+
+<script>
+const TOTAL_PAGES = 18;
+let currentPage = 2;
+let currentMode = 'light';
+
+const pages = [
+  { chapter: 'Chapter 1', title: 'Feature Suggestion:\nBook Mode', body: `<p>You suggested an amazing idea: make the UX/UI as if you are reading a book with page numbers.</p><p>This transforms the AI experience into something more immersive, focused, and powerful.</p>` },
+  { chapter: 'Chapter 2', title: 'The Core Experience', body: `<p>Turn any conversation into a real book-style reading experience.</p><ul class="page-checklist"><li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Clean page layout (like a book)</li><li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Page numbers (Page 1, 2, 3…)</li><li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Smooth page flipping animation</li><li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Minimal distractions</li><li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Better focus, deeper learning</li></ul>` },
+  { chapter: 'Chapter 3', title: 'Why It Matters', body: `<p>Book Mode is not just a design change. It is a learning revolution.</p><ul style="padding-left:16px; margin-top:8px;"><li>Reduces distractions</li><li>Improves focus</li><li>Creates a deep reading experience</li><li>Makes knowledge easy to revisit</li></ul>` },
+  { chapter: 'Chapter 4', title: 'The Product Vision', body: `<p>Imagine every AI conversation becoming a beautiful book you can revisit, annotate, and share.</p><p>This is the future of knowledge consumption.</p>` },
+];
+
+function updateSpread() {
+  const left = document.querySelector('.book-page.left-page');
+  const right = document.querySelector('.book-page.right-page');
+  const idx = Math.floor((currentPage - 1) / 2);
+  const leftData = pages[idx] || pages[pages.length - 1];
+  const rightData = pages[idx + 1] || { chapter: `Chapter ${idx + 2}`, title: 'To be continued…', body: '<p>More chapters coming soon.</p>' };
+
+  left.innerHTML = `
+    <div class="chapter-label">${leftData.chapter}</div>
+    <div class="chapter-ornament">❧</div>
+    <div class="page-heading">${leftData.title.replace('\n', '<br>')}</div>
+    <div class="page-body">${leftData.body}</div>
+    <div class="page-number">Page ${currentPage - 1} of ${TOTAL_PAGES}</div>
+  `;
+  right.innerHTML = `
+    <div class="chapter-label">${rightData.chapter}</div>
+    <div class="chapter-ornament">❧</div>
+    <div class="page-heading">${rightData.title}</div>
+    <div class="page-body">${rightData.body}</div>
+    <div class="page-number">Page ${currentPage} of ${TOTAL_PAGES}</div>
+  `;
+
+  const pct = Math.round((currentPage / TOTAL_PAGES) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPanel').style.width = pct + '%';
+  document.getElementById('pageLabel').textContent = `Page ${currentPage} of ${TOTAL_PAGES} • ${pct}%`;
+
+  // Dot update
+  document.querySelectorAll('.page-dot:not(.ellipsis)').forEach((d, i) => {
+    d.classList.toggle('active', d.textContent.trim() === String(Math.ceil(currentPage / 2)));
+  });
+}
+
+function animateFlip(dir) {
+  const spread = document.getElementById('bookSpread');
+  spread.style.transition = 'opacity .18s, transform .18s';
+  spread.style.opacity = '0';
+  spread.style.transform = dir > 0 ? 'translateX(12px)' : 'translateX(-12px)';
+  setTimeout(() => {
+    updateSpread();
+    spread.style.transform = dir > 0 ? 'translateX(-8px)' : 'translateX(8px)';
+    requestAnimationFrame(() => {
+      spread.style.opacity = '1';
+      spread.style.transform = 'translateX(0)';
+    });
+  }, 180);
+}
+
+function nextPage() {
+  if (currentPage < TOTAL_PAGES) { currentPage = Math.min(currentPage + 2, TOTAL_PAGES); animateFlip(1); }
+}
+function prevPage() {
+  if (currentPage > 2) { currentPage = Math.max(currentPage - 2, 2); animateFlip(-1); }
+}
+
+function setMode(mode) {
+  document.body.classList.remove('sepia-mode', 'dark-mode');
+  if (mode === 'sepia') document.body.classList.add('sepia-mode');
+  if (mode === 'dark') document.body.classList.add('dark-mode');
+  currentMode = mode;
+  document.getElementById('modeLight').classList.toggle('active', mode === 'light');
+  document.getElementById('modeSepia').classList.toggle('active', mode === 'sepia');
+  document.getElementById('modeDark').classList.toggle('active', mode === 'dark');
+}
+
+function toggleTheme() {
+  const modes = ['light', 'sepia', 'dark'];
+  const next = modes[(modes.indexOf(currentMode) + 1) % modes.length];
+  setMode(next);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') nextPage();
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevPage();
+});
+</script>
+</body>
+</html>
